@@ -27,6 +27,14 @@ public class JoinUp {
     }
 
     public void run() {
-        System.out.println("Word: " + dictionary.get(0));
+
+    }
+
+    public ArrayList<String> getSingleLinkedArray() {
+        return new ArrayList<String>();
+    }
+
+    public ArrayList<String> getDoubleLinkedArray() {
+        return new ArrayList<String>();
     }
 }
