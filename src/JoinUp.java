@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-import java.util.ArrayList;
-import java.util.Scanner;
-import java.util.*;
-
-=======
->>>>>>> 4f6c611b2a0dfd6e10d6dc5f468b036da412978e
 /**
  * Etude 7 - Joined Up Writing
  * @author Kimberley Louw, Nathan Hardy
