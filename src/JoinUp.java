@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.*;
 
 /**
  * Etude 7 - Joined Up Writing
@@ -35,6 +36,41 @@ public class JoinUp {
     }
 
     public ArrayList<String> getDoubleLinkedArray() {
+    	HashSet<String> seen = new HashSet<String>(dictionary.size());
+    	Queue<ArrayList<String>> paths = new LinkedList<ArrayList<String>>();
+    	ArrayList<String> initial = new ArrayList<String>();
+    	ArrayList<String> current;
+
+    	seen.add(first);
+    	initial.add(first);
+    	paths.add(initial);
+
+    	while (!paths.isEmpty()) {
+            current = paths.remove();
+            String latest = current.get(current.size()-1);
+    		if (latest.equals(last)) {
+                return current;
+            }
+            for (int i = 0; i < dictionary.size(); i++) {
+                String word = dictionary.get(i);
+                if (!seen.contains(word)) {
+                    boolean adjacent = false;
+                    int n1, n2;
+                    n1 = latest.length();
+                    n2 = word.length();
+                    if (n2 > n1) {
+                        String s = 
+                    }
+                    if (adjacent) {
+                        ArrayList<String> path = new ArrayList<String>();
+                        path.addAll(current);
+                        path.add(word);
+                        paths.add(path);
+                    }
+                }
+            }
+    	}
+
         return new ArrayList<String>();
     }
 }
