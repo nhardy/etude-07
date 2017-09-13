@@ -64,6 +64,7 @@ public class JoinUp {
      * @return ArrayList chain of words
      */
     public ArrayList<String> getLinkedArray(BooleanOperator operator) {
+        // FIXME: Leaky abstraction
         boolean doubleLinked = operator.apply(true, false);
 
         // Words already seen
@@ -84,6 +85,7 @@ public class JoinUp {
             ArrayList<String> currentPath = paths.remove();
             // Get the last word from that path
             String currentWord = currentPath.get(currentPath.size() - 1);
+            int currentWordLength = currentWord.length();
 
             // If the last word is the same as last, then we have reached the end
             // and can return the entire word chain
@@ -94,27 +96,32 @@ public class JoinUp {
                 // Ignore words that we've already seen
                 if (seen.contains(word)) continue;
 
+                int wordLength = word.length();
+
                 // A word is considered 'adjacent' if:
                 // the suffix of the first word is the prefix of the second
                 // For single linked words,
                 boolean isAdjacent = false;
                 // Exit early for double linked chains if one word is less than half the length of the other
-                if (doubleLinked && (word.length() < currentWord.length() / 2.0 || currentWord.length() < word.length() / 2.0)) continue;
+                if (doubleLinked && (wordLength < currentWordLength / 2.0 || currentWordLength < wordLength / 2.0)) continue;
 
                 // Slide the second word across the first
-                for (int i = Math.max(currentWord.length() - word.length(), 0); i < currentWord.length(); i++) {
-                    // Potentially overlapping portion of the first word
-                    String potentialOverlap = currentWord.substring(i);
-
-                    if (!potentialOverlap.contains("" + word.charAt(0))) break;
-                    boolean currentWordHalfOverlapped = potentialOverlap.length() >= currentWord.length() / 2.0;
-                    boolean wordHalfOverlapped = potentialOverlap.length() >= word.length() / 2.0;
+                for (int i = Math.max(currentWordLength - wordLength, 0); i < currentWordLength; i++) {
+                    boolean currentWordHalfOverlapped = currentWordLength - i >= currentWordLength / 2.0;
+                    boolean wordHalfOverlapped = currentWordLength - i >= wordLength / 2.0;
 
                     // If neither word is half overlapped with the other, we don't need to check these two words against each other anymore
                     if (!operator.apply(currentWordHalfOverlapped, wordHalfOverlapped)) break;
 
-                    // If the potentially overlapping portion of the word does match, and the condition is met, then the two words are 'adjacent'
-                    if (word.indexOf(potentialOverlap) == 0) {
+                    // Potentially overlapping portion of the first word
+                    String potentialOverlap = currentWord.substring(i);
+
+                    // Performance boost: if the first letter in the next word is not present
+                    // in the potential overlap, we can stop checking this word
+                    if (!potentialOverlap.contains(word.substring(0, 1))) break;
+
+                    // If the potentially overlapping portion matches, the two words are 'adjacent'
+                    if (potentialOverlap.equals(word.substring(0, currentWordLength - i))) {
                         isAdjacent = true;
                         break;
                     }
