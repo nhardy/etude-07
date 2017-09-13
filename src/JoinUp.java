@@ -64,6 +64,8 @@ public class JoinUp {
      * @return ArrayList chain of words
      */
     public ArrayList<String> getLinkedArray(BooleanOperator operator) {
+        boolean doubleLinked = operator.apply(true, false);
+
         // Words already seen
         HashSet<String> seen = new HashSet<String>(dictionary.size());
         seen.add(first);
@@ -97,22 +99,22 @@ public class JoinUp {
                 // For single linked words,
                 boolean isAdjacent = false;
                 // Exit early for double linked chains if one word is less than half the length of the other
-                if (operator.apply(true, false) == false
-                    && (word.length() < currentWord.length() / 2.0 || currentWord.length() < word.length() / 2.0)
-                ) continue;
+                if (doubleLinked && (word.length() < currentWord.length() / 2.0 || currentWord.length() < word.length() / 2.0)) continue;
 
                 // Slide the second word across the first
                 for (int i = Math.max(currentWord.length() - word.length(), 0); i < currentWord.length(); i++) {
                     // Potentially overlapping portion of the first word
                     String potentialOverlap = currentWord.substring(i);
+
+                    if (!potentialOverlap.contains("" + word.charAt(0))) break;
                     boolean currentWordHalfOverlapped = potentialOverlap.length() >= currentWord.length() / 2.0;
                     boolean wordHalfOverlapped = potentialOverlap.length() >= word.length() / 2.0;
 
                     // If neither word is half overlapped with the other, we don't need to check these two words against each other anymore
-                    if (!currentWordHalfOverlapped && !wordHalfOverlapped) break;
+                    if (!operator.apply(currentWordHalfOverlapped, wordHalfOverlapped)) break;
 
                     // If the potentially overlapping portion of the word does match, and the condition is met, then the two words are 'adjacent'
-                    if (word.indexOf(potentialOverlap) == 0 && operator.apply(currentWordHalfOverlapped, wordHalfOverlapped)) {
+                    if (word.indexOf(potentialOverlap) == 0) {
                         isAdjacent = true;
                         break;
                     }
