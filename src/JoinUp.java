@@ -65,7 +65,7 @@ public class JoinUp {
      */
     public ArrayList<String> getLinkedArray(BooleanOperator operator) {
         // FIXME: Leaky abstraction
-        boolean doubleLinked = operator.apply(true, false);
+        boolean doubleLinked = !operator.apply(true, false);
 
         // Words already seen
         HashSet<String> seen = new HashSet<String>(dictionary.size());
@@ -102,6 +102,7 @@ public class JoinUp {
                 // the suffix of the first word is the prefix of the second
                 // For single linked words,
                 boolean isAdjacent = false;
+
                 // Exit early for double linked chains if one word is less than half the length of the other
                 if (doubleLinked && (wordLength < currentWordLength / 2.0 || currentWordLength < wordLength / 2.0)) continue;
 
@@ -166,7 +167,6 @@ public class JoinUp {
         // we want to include it
         return getLinkedArray((boolean a, boolean b) -> a && b);
     }
-
 
     interface BooleanOperator {
         public boolean apply(boolean a, boolean b);
