@@ -5,6 +5,7 @@
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -23,6 +24,10 @@ public class JoinUp {
      * ArrayList of all words specified by stdin
      */
     private ArrayList<String> dictionary = new ArrayList<String>();
+    /**
+     * Tree structure for storing words as trees of characters
+     */
+    private TreeNode tree = new TreeNode();
 
     public static void main(String[] args) {
         new JoinUp(args[0], args[1]).run();
@@ -36,9 +41,11 @@ public class JoinUp {
         while (scanner.hasNextLine()) {
             dictionary.add(scanner.nextLine());
         }
-        // Sort dictionary for Binary Search
-        Collections.sort(dictionary);
         scanner.close();
+
+        for (String word : dictionary) {
+            tree.putWord(word);
+        }
     }
 
     /**
@@ -47,8 +54,6 @@ public class JoinUp {
     public void run() {
         printList(getSingleLinkedArray());
         printList(getDoubleLinkedArray());
-        log("DEBUG: " + "a".compareTo("b"));
-        log("DEBUG: " + binarySearch(dictionary, "fix"));
     }
 
     /**
@@ -96,36 +101,21 @@ public class JoinUp {
             // and can return the entire word chain
             if (currentWord.equals(last)) return currentPath;
 
-            log("currentPath: " + currentPath);
-
             for (int currentWordOffset = 0; currentWordOffset < currentWordLength; currentWordOffset++) {
+                // Exit early if we're checking for double linked words and we have less than
+                // half of the current word left to check
                 if (doubleLinked && currentWordOffset > currentWordLength / 2) break;
 
+                // Portion of the current word that we are checking other words against
                 String potentialOverlap = currentWord.substring(currentWordOffset);
-                log("potentialOverlap: " + potentialOverlap);
 
-                int dictionaryIndex = binarySearch(dictionary, potentialOverlap);
-                log("dictionaryIndex: " + dictionaryIndex);
-                int lowerBound = dictionaryIndex;
-                while (lowerBound > 0 && dictionary.get(lowerBound).startsWith(potentialOverlap)) {
-                    lowerBound--;
-                }
-                int upperBound = dictionaryIndex;
-                while (upperBound < dictionary.size() && dictionary.get(upperBound).startsWith(potentialOverlap)) {
-                    upperBound++;
-                }
-
-                log("lowerBound: " + dictionary.get(lowerBound) + lowerBound);
-                log("upperBound: " + dictionary.get(upperBound) + upperBound);
-
-                for (int wordIndex = lowerBound; wordIndex < upperBound; wordIndex++) {
-                    String word = dictionary.get(wordIndex);
-
+                // For every word in the dictionary that starts with our potential overlap
+                for (String word : tree.getWordsStartingWith(potentialOverlap)) {
+                    // If we have already seen this word, don't bother considering this word
                     if (seen.contains(word)) continue;
 
-                    // log("checking word: " + word);
-
-                    if (word.startsWith(potentialOverlap)) {
+                    // If we have the right amount of overlap
+                    if (operator.apply(currentWordOffset <= currentWordLength / 2.0, potentialOverlap.length() >= word.length() / 2.0)) {
                         // Mark the word as seen to prevent cycles or longer paths reusing this word
                         seen.add(word);
 
@@ -140,58 +130,6 @@ public class JoinUp {
                     }
                 }
             }
-
-            // // For each word in the dictionary
-            // for (String word : dictionary) {
-            //     // Ignore words that we've already seen
-            //     if (seen.contains(word)) continue;
-
-            //     int wordLength = word.length();
-
-            //     // A word is considered 'adjacent' if:
-            //     // the suffix of the first word is the prefix of the second
-            //     // For single linked words,
-            //     boolean isAdjacent = false;
-
-            //     // Exit early for double linked chains if one word is less than half the length of the other
-            //     if (doubleLinked && (wordLength < currentWordLength / 2.0 || currentWordLength < wordLength / 2.0)) continue;
-
-            //     // Slide the second word across the first
-            //     for (int i = Math.max(currentWordLength - wordLength, 0); i < currentWordLength; i++) {
-            //         boolean currentWordHalfOverlapped = currentWordLength - i >= currentWordLength / 2.0;
-            //         boolean wordHalfOverlapped = currentWordLength - i >= wordLength / 2.0;
-
-            //         // If neither word is half overlapped with the other, we don't need to check these two words against each other anymore
-            //         if (!operator.apply(currentWordHalfOverlapped, wordHalfOverlapped)) break;
-
-            //         // Potentially overlapping portion of the first word
-            //         String potentialOverlap = currentWord.substring(i);
-
-            //         // Performance boost: if the first letter in the next word is not present
-            //         // in the potential overlap, we can stop checking this word
-            //         if (!potentialOverlap.contains(word.substring(0, 1))) break;
-
-            //         // If the potentially overlapping portion matches, the two words are 'adjacent'
-            //         if (potentialOverlap.equals(word.substring(0, currentWordLength - i))) {
-            //             isAdjacent = true;
-            //             break;
-            //         }
-            //     }
-
-            //     if (isAdjacent) {
-            //         // Mark the word as seen to prevent cycles or longer paths reusing this word
-            //         seen.add(word);
-
-            //         // Create a new path
-            //         ArrayList<String> path = new ArrayList<String>();
-            //         // Add the current path to the new path
-            //         path.addAll(currentPath);
-            //         // Add the new word
-            //         path.add(word);
-            //         // Add the new path to the queue
-            //         paths.add(path);
-            //     }
-            // }
         }
 
         // If we haven't found a valid word chain, just return an empty ArrayList to avoid a runtime exception
@@ -218,35 +156,64 @@ public class JoinUp {
         return getLinkedArray((boolean a, boolean b) -> a && b);
     }
 
-    private int binarySearch(ArrayList<String> collection, String needle) {
-        int start = 0;
-        int end = collection.size();
-        int cursor = -1;
+    /**
+     * Provides an abstraction over a non-binary Search Tree for words by character
+     */
+    class TreeNode {
+        private HashMap<Character, TreeNode> children = new HashMap<Character, TreeNode>();
+        private String word = null;
 
-        while (start != end) {
-            int newCursor = (start + end) / 2;
-            if (newCursor == cursor) {
-                break;
+        /**
+         * Returns a list of words that start with the remaining characters. If empty,
+         * returns a list of all child words.
+         * @param remainingChars remaining characters
+         * @return A List of all words starting with {@code remainingChars}
+         */
+        public ArrayList<String> getWordsStartingWith(String remainingChars) {
+            ArrayList<String> result = new ArrayList<String>();
+
+            if (remainingChars.isEmpty()) {
+                if (word != null) result.add(word);
+
+                for (TreeNode child : children.values()) {
+                    result.addAll(child.getWordsStartingWith(""));
+                }
+            } else {
+                if (children.containsKey(remainingChars.charAt(0))) {
+                    result.addAll(children.get(remainingChars.charAt(0)).getWordsStartingWith(remainingChars.substring(1)));
+                }
             }
-            cursor = newCursor;
 
-            String current = collection.get(cursor);
-            int cmp = current.compareTo(needle);
-            if (cmp > 0) {
-                start = cursor;
-            } else if (cmp < 0) {
-                end = cursor;
+            return result;
+        }
+
+        private void putWord(String word, int depth) {
+            if (depth == word.length()) {
+                this.word = word;
+            } else {
+                if (!children.containsKey(word.charAt(depth))) {
+                    children.put(word.charAt(depth), new TreeNode());
+                }
+                children.get(word.charAt(depth)).putWord(word, depth + 1);
             }
         }
 
-        return cursor;
+        /**
+         * Puts a word into the search tree
+         * @param word Word to insert into the tree
+         */
+        public void putWord(String word) {
+            putWord(word, 0);
+        }
     }
 
     interface BooleanOperator {
+        /**
+         * Returns a boolean according to some expression involving {@code a} and {@code b}
+         * @param a Boolean A
+         * @param b Boolean B
+         * @return Boolean result
+         */
         public boolean apply(boolean a, boolean b);
-    }
-
-    private void log(Object output) {
-        System.out.println(output);
     }
 }
