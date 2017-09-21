@@ -1,6 +1,6 @@
 run: build
 	@echo Running...
-	@java -cp bin JoinUp old young < dict.txt
+	@java -cp bin JoinUp suffix read < smalldict.txt
 .PHONY: run
 
 build:
